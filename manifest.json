@@ -1,6 +1,6 @@
 {
-  "name": "Registro Fotográfico de Obra",
-  "short_name": "RegistroObra",
+  "name": "Hachi-Obra",
+  "short_name": "Hachi-Obra",
   "description": "App para generar informes fotográficos de obra en campo",
   "start_url": "./index.html",
   "display": "standalone",
