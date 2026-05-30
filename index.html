@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#E8610A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="RegistroObra">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+<title>Registro Fotográfico · Obra</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.umd.min.js"></script>
+<style>
+:root {
+  --orange:#E8610A; --orange-dark:#C4510A; --yellow:#F5C842;
+  --dark:#1A1A1A; --gray-dark:#2E2E2E; --white:#FAFAF8;
+  --success:#2D7A3A; --danger:#C0392B;
+  --safe-top:env(safe-area-inset-top,0px); --safe-bottom:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Barlow',sans-serif;background:var(--dark);color:var(--white);min-height:100vh;overscroll-behavior-y:contain}
+
+/* SPLASH */
+#splash{position:fixed;inset:0;z-index:9999;background:var(--dark);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .5s}
+#splash.hidden{opacity:0;pointer-events:none}
+.splash-icon{width:96px;height:96px;border-radius:22px;background:linear-gradient(135deg,var(--orange),var(--orange-dark));display:flex;align-items:center;justify-content:center;font-size:2.8rem;margin-bottom:18px;box-shadow:0 20px 50px rgba(232,97,10,.45);animation:pulse 1.6s ease infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+.splash-title{font-family:'Barlow Condensed',sans-serif;font-size:1.75rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;text-align:center;line-height:1.1}
+.splash-sub{color:#777;font-size:.78rem;margin-top:5px;text-align:center}
+.splash-bar{width:150px;height:3px;background:#333;border-radius:2px;margin-top:28px;overflow:hidden}
+.splash-fill{height:100%;background:var(--orange);border-radius:2px;animation:sload 1.9s ease forwards}
+@keyframes sload{from{width:0}to{width:100%}}
+.splash-by{position:absolute;bottom:28px;font-size:.65rem;color:#444;letter-spacing:.08em}
+
+/* TABS */
+.tabs{display:flex;background:#222;border-bottom:2px solid #333;position:sticky;top:0;z-index:99}
+.tab-btn{flex:1;padding:13px 6px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.85rem;letter-spacing:.06em;text-transform:uppercase;background:none;border:none;color:#666;cursor:pointer;transition:all .2s;border-bottom:2px solid transparent;margin-bottom:-2px}
+.tab-btn.active{color:var(--orange);border-bottom-color:var(--orange)}
+
+/* HEADER */
+.app-header{background:linear-gradient(135deg,var(--orange) 0%,var(--orange-dark) 60%,#8B3A0A 100%);padding:calc(14px + var(--safe-top)) 16px 14px;box-shadow:0 4px 20px rgba(232,97,10,.4)}
+.header-top{display:flex;align-items:flex-start;justify-content:space-between}
+.app-header h1{font-family:'Barlow Condensed',sans-serif;font-size:1.45rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;line-height:1.1}
+.app-header p{font-size:.72rem;opacity:.85;margin-top:2px;font-weight:300}
+.header-by{font-size:.58rem;color:rgba(255,255,255,.45);letter-spacing:.06em;margin-top:4px;font-style:italic}
+.offline-badge{background:rgba(0,0,0,.3);border-radius:12px;padding:3px 9px;font-size:.62rem;font-weight:600;letter-spacing:.06em;white-space:nowrap;display:none}
+.offline-badge.show{display:block}
+.header-stripe{height:3px;background:repeating-linear-gradient(90deg,var(--yellow) 0,var(--yellow) 12px,transparent 12px,transparent 20px);margin-top:12px;border-radius:2px}
+
+/* INSTALL BANNER */
+#installBanner{display:none;background:linear-gradient(135deg,var(--orange-dark),#8B3A0A);padding:11px 14px;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.1)}
+#installBanner.show{display:flex}
+.install-text{flex:1;font-size:.8rem;font-weight:500}
+.install-text strong{display:block;font-size:.87rem}
+.btn-install-sm{background:#fff;color:var(--orange-dark);border:none;border-radius:6px;padding:6px 13px;font-weight:700;font-size:.77rem;cursor:pointer;white-space:nowrap;font-family:'Barlow',sans-serif}
+.btn-x{background:none;border:none;color:rgba(255,255,255,.5);font-size:1.1rem;cursor:pointer;padding:4px}
+
+/* UPDATE BANNER */
+#updateBanner{display:none;background:#2D7A3A;padding:9px 14px;align-items:center;gap:10px;font-size:.8rem}
+#updateBanner.show{display:flex}
+.btn-upd{background:#fff;color:#2D7A3A;border:none;border-radius:5px;padding:5px 11px;font-weight:700;font-size:.76rem;cursor:pointer;margin-left:auto;font-family:'Barlow',sans-serif}
+
+/* CONTAINER */
+.container{max-width:740px;margin:0 auto;padding:0 13px 130px}
+.page{display:none}.page.active{display:block}
+
+/* CARDS */
+.card{background:var(--gray-dark);border:1px solid #3A3A3A;border-radius:10px;padding:15px;margin:13px 0;animation:cardIn .3s ease both}
+@keyframes cardIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.card-title{font-family:'Barlow Condensed',sans-serif;font-size:.68rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--orange);margin-bottom:13px;display:flex;align-items:center;gap:8px}
+.card-title::before{content:'';display:block;width:3px;height:13px;background:var(--orange);border-radius:2px}
+
+/* FORM */
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.form-row.full{grid-template-columns:1fr}
+.form-row.three{grid-template-columns:1fr 1fr 1fr}
+label{font-size:.68rem;font-weight:600;color:#AAA;text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:4px}
+input[type=text],input[type=date],textarea,select{width:100%;padding:10px 12px;background:#1A1A1A;border:1px solid #444;border-radius:6px;color:var(--white);font-family:'Barlow',sans-serif;font-size:.87rem;transition:border-color .2s;-webkit-appearance:none;appearance:none}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--orange);box-shadow:0 0 0 3px rgba(232,97,10,.15)}
+textarea{resize:vertical;min-height:75px}
+select option{background:#1A1A1A}
+
+/* PRESET ITEMS LIST */
+.preset-item{background:#1A1A1A;border:1px solid #3A3A3A;border-radius:8px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px;animation:cardIn .25s ease both}
+.preset-item-info{flex:1;min-width:0}
+.preset-item-name{font-weight:600;font-size:.88rem;color:var(--white);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.preset-item-cat{font-size:.72rem;color:#888}
+.preset-item-actions{display:flex;gap:6px;flex-shrink:0}
+.btn-edit-preset{background:rgba(232,97,10,.12);border:1px solid rgba(232,97,10,.3);color:var(--orange);border-radius:5px;padding:5px 10px;font-size:.72rem;font-weight:600;cursor:pointer;font-family:'Barlow',sans-serif}
+.btn-del-preset{background:rgba(192,57,43,.12);border:1px solid rgba(192,57,43,.25);color:#E57373;border-radius:5px;padding:5px 8px;font-size:.72rem;cursor:pointer;font-family:'Barlow',sans-serif}
+.empty-presets{text-align:center;padding:30px 20px;color:#555;font-size:.85rem}
+.empty-presets .icon{font-size:2.5rem;margin-bottom:10px}
+
+/* ADD PRESET FORM */
+.add-preset-form{background:#1A1A1A;border:1px solid rgba(232,97,10,.3);border-radius:8px;padding:14px;margin-bottom:12px;display:none}
+.add-preset-form.show{display:block}
+
+/* ITEM BLOCK */
+.item-block{background:#222;border:1px solid #3A3A3A;border-left:3px solid var(--orange);border-radius:8px;padding:13px;margin-bottom:13px;animation:cardIn .3s ease both}
+.item-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px}
+.item-number{font-family:'Barlow Condensed',sans-serif;font-size:.92rem;font-weight:800;color:var(--orange);background:rgba(232,97,10,.12);padding:3px 10px;border-radius:4px}
+.item-controls{display:flex;gap:6px;align-items:center}
+.btn-remove{background:rgba(192,57,43,.15);border:1px solid rgba(192,57,43,.3);color:#E57373;border-radius:6px;padding:5px 10px;font-size:.73rem;font-weight:600;cursor:pointer;font-family:'Barlow',sans-serif;transition:all .2s}
+
+/* PHOTO COUNT SELECTOR */
+.photo-count-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.photo-count-label{font-size:.68rem;font-weight:600;color:#AAA;text-transform:uppercase;letter-spacing:.08em;white-space:nowrap}
+.count-btn{background:#1A1A1A;border:1px solid #444;color:#AAA;border-radius:6px;padding:5px 12px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:'Barlow',sans-serif;transition:all .2s}
+.count-btn.active{background:rgba(232,97,10,.15);border-color:var(--orange);color:var(--orange)}
+
+/* PHOTO GRID */
+.photo-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.photo-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px}
+.photo-grid-4{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.photo-slot{position:relative;border:2px dashed #555;border-radius:8px;overflow:hidden;background:#1A1A1A;min-height:110px;cursor:pointer;transition:border-color .2s}
+.photo-slot:active{border-color:var(--orange)}
+.photo-slot input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;z-index:2;width:100%;height:100%}
+.photo-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;height:110px;color:#666;font-size:.72rem;text-align:center;padding:8px;pointer-events:none}
+.photo-placeholder .icon{font-size:1.7rem;margin-bottom:5px}
+.photo-preview{width:100%;height:120px;object-fit:cover;display:block}
+.photo-grid-4 .photo-preview{height:110px}
+.photo-slot.has-image{border-color:#555;border-style:solid}
+.remove-photo{position:absolute;top:4px;right:4px;z-index:3;background:rgba(0,0,0,.72);border:none;color:#fff;width:22px;height:22px;border-radius:50%;cursor:pointer;font-size:.68rem;display:none;align-items:center;justify-content:center}
+.photo-slot.has-image .remove-photo{display:flex}
+
+/* PRESET LOAD BUTTON */
+.btn-load-preset{background:rgba(232,97,10,.08);border:1px dashed rgba(232,97,10,.4);color:var(--orange);border-radius:6px;padding:6px 12px;font-size:.75rem;font-weight:600;cursor:pointer;font-family:'Barlow',sans-serif;white-space:nowrap}
+.btn-load-preset:active{background:rgba(232,97,10,.18)}
+.preset-select-dropdown{background:#1A1A1A;border:1px solid rgba(232,97,10,.4);border-radius:8px;padding:10px;margin-bottom:10px;display:none}
+.preset-select-dropdown.show{display:block}
+.preset-opt{padding:9px 12px;border-radius:6px;cursor:pointer;font-size:.85rem;border-bottom:1px solid #2A2A2A;transition:background .15s}
+.preset-opt:last-child{border-bottom:none}
+.preset-opt:active{background:rgba(232,97,10,.12)}
+.preset-opt-name{font-weight:600;color:var(--white)}
+.preset-opt-cat{font-size:.72rem;color:#888;margin-top:1px}
+
+/* STATS */
+.stats-row{display:flex;gap:8px;margin:12px 0 4px;flex-wrap:wrap}
+.stat-badge{background:#222;border:1px solid #3A3A3A;border-radius:6px;padding:5px 11px;font-size:.73rem;color:#AAA}
+.stat-badge strong{color:var(--orange);font-size:.9rem;margin-right:3px}
+
+/* BOTTOM */
+.bottom-actions{position:fixed;bottom:0;left:0;right:0;background:linear-gradient(transparent,var(--dark) 35%);padding:14px 13px calc(14px + var(--safe-bottom));z-index:50}
+.bottom-inner{max-width:740px;margin:0 auto;display:flex;flex-direction:column;gap:7px}
+.btn-add-item{background:transparent;color:var(--orange);border:1.5px dashed var(--orange);font-size:.83rem;padding:10px 14px;border-radius:8px;cursor:pointer;width:100%;font-family:'Barlow',sans-serif;font-weight:600;transition:all .2s;letter-spacing:.04em}
+.btn-add-item:active{background:rgba(232,97,10,.12)}
+.progress-bar{height:3px;background:#333;border-radius:2px;overflow:hidden;display:none}
+.progress-fill{height:100%;background:var(--orange);width:0;transition:width .4s}
+.btn-success{background:var(--success);color:#fff;border:none;border-radius:10px;padding:14px;font-family:'Barlow',sans-serif;font-size:.92rem;font-weight:700;cursor:pointer;width:100%;letter-spacing:.04em;text-transform:uppercase;box-shadow:0 4px 14px rgba(45,122,58,.35);transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-success:active{transform:scale(.98)}
+.btn-success:disabled{opacity:.5;cursor:not-allowed}
+
+/* TOAST */
+.toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(20px);z-index:999;padding:10px 18px;border-radius:8px;font-size:.82rem;font-weight:600;white-space:nowrap;opacity:0;transition:all .3s ease;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.ok{background:#2D7A3A;color:#fff}.toast.err{background:#C0392B;color:#fff}.toast.info{background:#1A5276;color:#fff}
+
+/* BTN GENERIC */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 16px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:.83rem;font-weight:600;cursor:pointer;border:none;transition:all .2s}
+.btn-primary{background:var(--orange);color:#fff}
+.btn-primary:active{background:var(--orange-dark)}
+.btn-outline{background:transparent;color:#AAA;border:1px solid #444}
+.btn-outline:active{border-color:var(--orange);color:var(--orange)}
+
+/* DIVIDER */
+.divider{height:1px;background:#333;margin:14px 0}
+
+@media(max-width:400px){
+  .form-row.three{grid-template-columns:1fr 1fr}
+  .app-header h1{font-size:1.2rem}
+  .photo-grid-3{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="splash-icon">📋</div>
+  <div class="splash-title">Registro<br>Fotográfico</div>
+  <div class="splash-sub">Ingeniería Civil · Informes de Obra</div>
+  <div class="splash-bar"><div class="splash-fill"></div></div>
+  <div class="splash-by">by: Jorge Meneses</div>
+</div>
+
+<!-- BANNERS -->
+<div id="installBanner">
+  <div class="install-text"><strong>📲 Instalar App</strong>Añadir a pantalla de inicio para uso offline</div>
+  <button class="btn-install-sm" id="btnInstall">Instalar</button>
+  <button class="btn-x" onclick="dismissInstall()">✕</button>
+</div>
+<div id="updateBanner">
+  <span>🔄 Nueva versión disponible</span>
+  <button class="btn-upd" onclick="applyUpdate()">Actualizar</button>
+</div>
+
+<!-- HEADER -->
+<div class="app-header">
+  <div class="header-top">
+    <div>
+      <h1>📋 Registro Fotográfico</h1>
+      <p>Generador de informes de obra · Ing. Civil</p>
+      <div class="header-by">by: Jorge Meneses</div>
+    </div>
+    <div class="offline-badge" id="offlineBadge">⚡ OFFLINE</div>
+  </div>
+  <div class="header-stripe"></div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('registro')" id="tab-registro">📝 Informe</button>
+  <button class="tab-btn" onclick="switchTab('presets')" id="tab-presets">📦 Mis Ítems</button>
+  <button class="tab-btn" onclick="switchTab('config')" id="tab-config">⚙️ Config</button>
+</div>
+
+<!-- ══════════════ TAB: REGISTRO ══════════════ -->
+<div class="container">
+<div class="page active" id="page-registro">
+
+  <div class="card" style="animation-delay:.05s">
+    <div class="card-title">Datos del Proyecto</div>
+    <div class="form-row full"><div>
+      <label>Nombre del Proyecto / Obra</label>
+      <input type="text" id="proyecto" placeholder="Ej: Construcción Puente Vehicular Vda. El Carmen">
+    </div></div>
+    <div class="form-row">
+      <div><label>Residente de Obra</label><input type="text" id="residente" placeholder="Nombre completo"></div>
+      <div><label>Contratista</label><input type="text" id="contratista" placeholder="Empresa"></div>
+    </div>
+    <div class="form-row three">
+      <div><label>Fecha</label><input type="date" id="fecha"></div>
+      <div><label>N° Informe</label><input type="text" id="ninforme" placeholder="001"></div>
+      <div><label>Periodo</label><input type="text" id="periodo" placeholder="Mayo 2026"></div>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-badge"><strong id="statItems">0</strong> ítems</div>
+    <div class="stat-badge"><strong id="statPhotos">0</strong> fotos</div>
+  </div>
+
+  <div id="items-container"></div>
+  <div style="height:130px"></div>
+</div>
+
+<!-- ══════════════ TAB: PRESETS ══════════════ -->
+<div class="page" id="page-presets">
+  <div class="card" style="margin-top:13px">
+    <div class="card-title">Biblioteca de Ítems Precargados</div>
+    <p style="font-size:.8rem;color:#888;margin-bottom:14px;line-height:1.5">
+      Carga aquí tus ítems y actividades de obra. En el informe podrás insertar cualquiera con un toque, sin escribir de nuevo.
+    </p>
+
+    <!-- ADD FORM -->
+    <div id="addPresetForm" class="add-preset-form">
+      <div class="card-title" style="margin-bottom:10px">Nuevo Ítem</div>
+      <div class="form-row full"><div>
+        <label>Nombre de la Actividad</label>
+        <input type="text" id="pActividad" placeholder="Ej: Relleno con material granular seleccionado, compactación manual – mecánica">
+      </div></div>
+      <div class="form-row">
+        <div><label>Categoría / Capítulo</label><input type="text" id="pCategoria" placeholder="Ej: RELLENOS"></div>
+        <div><label>N° Ítem</label><input type="text" id="pNumitem" placeholder="Ej: 3,1"></div>
+      </div>
+      <div class="form-row">
+        <div><label>Unidad (opcional)</label><input type="text" id="pUnidad" placeholder="Ej: m³, ml, m², Gl"></div>
+        <div><label>Obs. por defecto (opcional)</label><input type="text" id="pObsDefault" placeholder="Texto de observación habitual"></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button class="btn btn-primary" onclick="savePreset()" style="flex:1">💾 Guardar Ítem</button>
+        <button class="btn btn-outline" onclick="toggleAddPreset(false)">Cancelar</button>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="toggleAddPreset(true)" id="btnShowAdd" style="width:100%;margin-bottom:12px">＋ Agregar Ítem a Biblioteca</button>
+
+    <div id="presetList"></div>
+  </div>
+
+  <div style="height:40px"></div>
+</div>
+
+<!-- ══════════════ TAB: CONFIG ══════════════ -->
+<div class="page" id="page-config">
+  <div class="card" style="margin-top:13px">
+    <div class="card-title">Configuración General</div>
+    <div class="form-row full"><div>
+      <label>Proyecto por defecto</label>
+      <input type="text" id="cfgProyecto" placeholder="Se cargará automáticamente al abrir">
+    </div></div>
+    <div class="form-row">
+      <div><label>Residente por defecto</label><input type="text" id="cfgResidente" placeholder="Tu nombre"></div>
+      <div><label>Contratista por defecto</label><input type="text" id="cfgContratista" placeholder="Empresa"></div>
+    </div>
+    <div class="form-row full"><div>
+      <label>Fotos por ítem (por defecto)</label>
+      <select id="cfgFotos">
+        <option value="2">2 fotos por ítem</option>
+        <option value="3">3 fotos por ítem</option>
+        <option value="4">4 fotos por ítem</option>
+      </select>
+    </div></div>
+    <button class="btn btn-primary" onclick="saveConfig()" style="width:100%;margin-top:6px">💾 Guardar Configuración</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Datos Guardados</div>
+    <p style="font-size:.8rem;color:#888;margin-bottom:14px;line-height:1.5">
+      La app guarda automáticamente tu progreso. Puedes limpiar los datos del informe actual sin borrar tu biblioteca de ítems.
+    </p>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button class="btn btn-outline" onclick="clearCurrentReport()" style="width:100%">🗑️ Limpiar informe actual</button>
+      <button class="btn btn-outline" onclick="clearAllData()" style="width:100%;color:#E57373;border-color:rgba(192,57,43,.4)">⚠️ Borrar TODO (incluyendo biblioteca)</button>
+    </div>
+  </div>
+
+  <div class="card" style="text-align:center;padding:20px">
+    <div style="font-size:2rem;margin-bottom:8px">📋</div>
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase">Registro Fotográfico de Obra</div>
+    <div style="font-size:.72rem;color:#666;margin-top:4px">Ingeniería Civil · v2.0</div>
+    <div style="font-size:.65rem;color:#444;margin-top:10px;font-style:italic;letter-spacing:.06em">by: Jorge Meneses</div>
+  </div>
+
+  <div style="height:40px"></div>
+</div>
+
+</div><!-- /container -->
+
+<!-- BOTTOM ACTIONS (solo en tab registro) -->
+<div class="bottom-actions" id="bottomActions">
+  <div class="bottom-inner">
+    <button class="btn-add-item" onclick="addItem()">＋ Agregar Ítem / Actividad</button>
+    <div class="progress-bar" id="progressBar"><div class="progress-fill" id="progressFill"></div></div>
+    <button class="btn-success" id="btnGenerar" onclick="generarWord()">
+      <span>📄</span><span>Generar Informe Word</span>
+    </button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════
+// SERVICE WORKER
+// ══════════════════════════════════════════════════════
+let newWorker = null;
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('./sw.js').then(reg=>{
+      reg.addEventListener('updatefound',()=>{
+        newWorker=reg.installing;
+        newWorker.addEventListener('statechange',()=>{
+          if(newWorker.state==='installed'&&navigator.serviceWorker.controller)
+            document.getElementById('updateBanner').classList.add('show');
+        });
+      });
+    }).catch(e=>console.log('SW:',e));
+    navigator.serviceWorker.addEventListener('controllerchange',()=>location.reload());
+  });
+}
+function applyUpdate(){if(newWorker)newWorker.postMessage('SKIP_WAITING')}
+
+// ══════════════════════════════════════════════════════
+// INSTALL PROMPT
+// ══════════════════════════════════════════════════════
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();deferredPrompt=e;
+  setTimeout(()=>{if(!localStorage.getItem('installDismissed'))document.getElementById('installBanner').classList.add('show')},2500);
+});
+document.getElementById('btnInstall').addEventListener('click',async()=>{
+  if(!deferredPrompt)return;
+  deferredPrompt.prompt();
+  const{outcome}=await deferredPrompt.userChoice;
+  if(outcome==='accepted'){showToast('✅ App instalada','ok');document.getElementById('installBanner').classList.remove('show');}
+  deferredPrompt=null;
+});
+function dismissInstall(){document.getElementById('installBanner').classList.remove('show');localStorage.setItem('installDismissed','1')}
+window.addEventListener('appinstalled',()=>{document.getElementById('installBanner').classList.remove('show');showToast('🎉 App instalada en tu celular','ok')});
+
+// ══════════════════════════════════════════════════════
+// OFFLINE
+// ══════════════════════════════════════════════════════
+function updOnline(){const b=document.getElementById('offlineBadge');navigator.onLine?b.classList.remove('show'):(b.classList.add('show'),showToast('⚡ Modo offline','info'))}
+window.addEventListener('online',updOnline);window.addEventListener('offline',updOnline);
+
+// ══════════════════════════════════════════════════════
+// SPLASH
+// ══════════════════════════════════════════════════════
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    document.getElementById('splash').classList.add('hidden');
+    setTimeout(()=>document.getElementById('splash').remove(),500);
+  },2000);
+});
+
+// ══════════════════════════════════════════════════════
+// TABS
+// ══════════════════════════════════════════════════════
+function switchTab(tab){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+tab).classList.add('active');
+  document.getElementById('tab-'+tab).classList.add('active');
+  document.getElementById('bottomActions').style.display = tab==='registro'?'block':'none';
+  if(tab==='presets')renderPresetList();
+}
+
+// ══════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════
+let items=[], itemCounter=0;
+let presets=[]; // biblioteca de ítems
+let config={proyecto:'',residente:'',contratista:'',fotos:2};
+let editPresetId=null;
+
+function saveAll(){
+  try{
+    localStorage.setItem('rfo_items',JSON.stringify(items.map(item=>({
+      id:item.id,photoCount:item.photoCount,photos:item.photos,
+      numitem:ge(`numitem-${item.id}`),actividad:ge(`actividad-${item.id}`),
+      categoria:ge(`categoria-${item.id}`),ejecutado:ge(`ejecutado-${item.id}`),
+      porcentaje:ge(`porcentaje-${item.id}`),obs:ge(`obs-${item.id}`),
+    }))));
+    localStorage.setItem('rfo_header',JSON.stringify({
+      proyecto:ge('proyecto'),residente:ge('residente'),contratista:ge('contratista'),
+      fecha:ge('fecha'),ninforme:ge('ninforme'),periodo:ge('periodo'),
+    }));
+    localStorage.setItem('rfo_counter',itemCounter);
+    localStorage.setItem('rfo_presets',JSON.stringify(presets));
+    localStorage.setItem('rfo_config',JSON.stringify(config));
+  }catch(e){console.warn(e)}
+}
+
+function ge(id){return document.getElementById(id)?.value||''}
+function sv(id,val){const el=document.getElementById(id);if(el)el.value=val||''}
+
+function loadAll(){
+  try{
+    // Config
+    const cfg=localStorage.getItem('rfo_config');
+    if(cfg)config=JSON.parse(cfg);
+    sv('cfgProyecto',config.proyecto);sv('cfgResidente',config.residente);
+    sv('cfgContratista',config.contratista);
+    const cfgFEl=document.getElementById('cfgFotos');if(cfgFEl)cfgFEl.value=config.fotos||2;
+
+    // Presets
+    const praw=localStorage.getItem('rfo_presets');
+    if(praw)presets=JSON.parse(praw);
+
+    // Header
+    const hraw=localStorage.getItem('rfo_header');
+    if(hraw){
+      const h=JSON.parse(hraw);
+      sv('proyecto',h.proyecto||config.proyecto);sv('residente',h.residente||config.residente);
+      sv('contratista',h.contratista||config.contratista);
+      sv('fecha',h.fecha);sv('ninforme',h.ninforme);sv('periodo',h.periodo);
+    } else {
+      sv('proyecto',config.proyecto);sv('residente',config.residente);sv('contratista',config.contratista);
+    }
+
+    // Items
+    const iraw=localStorage.getItem('rfo_items');
+    itemCounter=parseInt(localStorage.getItem('rfo_counter')||0);
+    if(iraw){
+      const saved=JSON.parse(iraw);
+      saved.forEach(s=>{
+        items.push({id:s.id,photoCount:s.photoCount||2,photos:s.photos||[]});
+        renderItem(s.id,s.photoCount||2);
+        setTimeout(()=>{
+          sv(`numitem-${s.id}`,s.numitem);sv(`actividad-${s.id}`,s.actividad);
+          sv(`categoria-${s.id}`,s.categoria);sv(`ejecutado-${s.id}`,s.ejecutado);
+          sv(`porcentaje-${s.id}`,s.porcentaje);sv(`obs-${s.id}`,s.obs);
+          // restore photos
+          (s.photos||[]).forEach((p,idx)=>{
+            if(!p)return;
+            const prev=document.getElementById(`preview-${s.id}-${idx}`);
+            const ph=document.getElementById(`ph-${s.id}-${idx}`);
+            const slot=document.getElementById(`slot-${s.id}-${idx}`);
+            if(prev){prev.src=p.base64;prev.style.display='block';}
+            if(ph)ph.style.display='none';
+            if(slot)slot.classList.add('has-image');
+          });
+        },60);
+      });
+      return saved.length>0;
+    }
+  }catch(e){console.warn(e)}
+  return false;
+}
+
+// ══════════════════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════════════════
+function saveConfig(){
+  config={
+    proyecto:ge('cfgProyecto'),residente:ge('cfgResidente'),
+    contratista:ge('cfgContratista'),fotos:parseInt(ge('cfgFotos'))||2
+  };
+  saveAll();
+  showToast('✅ Configuración guardada','ok');
+}
+
+function clearCurrentReport(){
+  if(!confirm('¿Limpiar el informe actual? No se borran los ítems de la biblioteca.'))return;
+  items=[];itemCounter=0;
+  document.getElementById('items-container').innerHTML='';
+  ['proyecto','residente','contratista','fecha','ninforme','periodo'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.value='';
+  });
+  localStorage.removeItem('rfo_items');localStorage.removeItem('rfo_header');localStorage.removeItem('rfo_counter');
+  // reload defaults
+  sv('proyecto',config.proyecto);sv('residente',config.residente);sv('contratista',config.contratista);
+  document.getElementById('fecha').value=new Date().toISOString().split('T')[0];
+  updateStats();addItem();
+  showToast('🗑️ Informe limpiado','ok');
+  switchTab('registro');
+}
+
+function clearAllData(){
+  if(!confirm('⚠️ Esto borrará TODO incluyendo la biblioteca de ítems. ¿Continuar?'))return;
+  localStorage.clear();location.reload();
+}
+
+// ══════════════════════════════════════════════════════
+// PRESETS MANAGEMENT
+// ══════════════════════════════════════════════════════
+function toggleAddPreset(show){
+  const form=document.getElementById('addPresetForm');
+  const btn=document.getElementById('btnShowAdd');
+  if(show){
+    form.classList.add('show');btn.style.display='none';
+    if(!editPresetId){
+      ['pActividad','pCategoria','pNumitem','pUnidad','pObsDefault'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    }
+  } else {
+    form.classList.remove('show');btn.style.display='block';editPresetId=null;
+  }
+}
+
+function savePreset(){
+  const actividad=ge('pActividad').trim();
+  if(!actividad){showToast('❌ Escribe el nombre de la actividad','err');return;}
+  if(editPresetId){
+    const idx=presets.findIndex(p=>p.id===editPresetId);
+    if(idx>=0) presets[idx]={...presets[idx],actividad,categoria:ge('pCategoria'),numitem:ge('pNumitem'),unidad:ge('pUnidad'),obsDefault:ge('pObsDefault')};
+    editPresetId=null;
+  } else {
+    presets.push({id:Date.now(),actividad,categoria:ge('pCategoria'),numitem:ge('pNumitem'),unidad:ge('pUnidad'),obsDefault:ge('pObsDefault')});
+  }
+  saveAll();renderPresetList();toggleAddPreset(false);
+  showToast('✅ Ítem guardado en biblioteca','ok');
+}
+
+function editPreset(id){
+  const p=presets.find(x=>x.id===id);if(!p)return;
+  editPresetId=id;
+  sv('pActividad',p.actividad);sv('pCategoria',p.categoria);sv('pNumitem',p.numitem);
+  sv('pUnidad',p.unidad);sv('pObsDefault',p.obsDefault);
+  toggleAddPreset(true);
+  document.getElementById('addPresetForm').scrollIntoView({behavior:'smooth'});
+}
+
+function deletePreset(id){
+  if(!confirm('¿Eliminar este ítem de la biblioteca?'))return;
+  presets=presets.filter(p=>p.id!==id);
+  saveAll();renderPresetList();
+  showToast('🗑️ Ítem eliminado','ok');
+}
+
+function renderPresetList(){
+  const container=document.getElementById('presetList');
+  if(presets.length===0){
+    container.innerHTML=`<div class="empty-presets"><div class="icon">📦</div><div>Sin ítems guardados</div><div style="font-size:.75rem;margin-top:5px;color:#444">Agrega los ítems de tu contrato para cargarlos rápido en obra</div></div>`;
+    return;
+  }
+  container.innerHTML=presets.map(p=>`
+    <div class="preset-item">
+      <div class="preset-item-info">
+        <div class="preset-item-name">${p.numitem?`<span style="color:var(--orange)">${p.numitem}</span> · `:''}${p.actividad}</div>
+        <div class="preset-item-cat">${p.categoria||'Sin categoría'}${p.unidad?' · '+p.unidad:''}</div>
+      </div>
+      <div class="preset-item-actions">
+        <button class="btn-edit-preset" onclick="editPreset(${p.id})">✏️</button>
+        <button class="btn-del-preset" onclick="deletePreset(${p.id})">✕</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ══════════════════════════════════════════════════════
+// ITEMS MANAGEMENT
+// ══════════════════════════════════════════════════════
+function addItem(presetData=null){
+  const id=++itemCounter;
+  const photoCount=config.fotos||2;
+  items.push({id,photoCount,photos:[]});
+  renderItem(id,photoCount);
+  if(presetData){
+    setTimeout(()=>{
+      sv(`numitem-${id}`,presetData.numitem||'');
+      sv(`actividad-${id}`,presetData.actividad||'');
+      sv(`categoria-${id}`,presetData.categoria||'');
+      sv(`obs-${id}`,presetData.obsDefault||'');
+    },50);
+  }
+  updateStats();
+  setTimeout(()=>{document.getElementById('item-'+id)?.scrollIntoView({behavior:'smooth',block:'start'})},120);
+}
+
+function removeItem(id){
+  if(items.length===1){showToast('⚠️ Necesitas al menos un ítem','err');return;}
+  items=items.filter(i=>i.id!==id);
+  document.getElementById('item-'+id)?.remove();
+  renumberItems();updateStats();saveAll();
+}
+
+function renumberItems(){
+  document.querySelectorAll('.item-number').forEach((el,idx)=>el.textContent='Ítem '+(idx+1));
+}
+
+function updateStats(){
+  document.getElementById('statItems').textContent=items.length;
+  let n=0;items.forEach(item=>item.photos.forEach(p=>{if(p)n++;}));
+  document.getElementById('statPhotos').textContent=n;
+}
+
+function setPhotoCount(itemId, count){
+  const item=items.find(i=>i.id===itemId);
+  if(!item)return;
+  // Preserve existing photos
+  const oldPhotos=[...item.photos];
+  item.photoCount=count;
+  item.photos=Array.from({length:count},(_,i)=>oldPhotos[i]||null);
+  // Re-render only the photo grid
+  const gridEl=document.getElementById(`photogrid-${itemId}`);
+  const countBtns=document.querySelectorAll(`#countbtns-${itemId} .count-btn`);
+  countBtns.forEach(b=>b.classList.toggle('active',parseInt(b.dataset.n)===count));
+  if(gridEl) gridEl.outerHTML=buildPhotoGrid(itemId,count,item.photos);
+  updateStats();saveAll();
+}
+
+function buildPhotoGrid(itemId,count,photos=[]){
+  const cls = count===3?'photo-grid-3':(count===4?'photo-grid-4':'photo-grid-2');
+  const slots=Array.from({length:count},(_,i)=>photoSlotHTML(itemId,i,photos[i])).join('');
+  return `<div class="${cls}" id="photogrid-${itemId}">${slots}</div>`;
+}
+
+function renderItem(id,photoCount){
+  const num=items.findIndex(i=>i.id===id)+1;
+  const count=photoCount||2;
+  const item=items.find(i=>i.id===id);
+  const div=document.createElement('div');
+  div.className='item-block';div.id='item-'+id;
+
+  // Preset load button
+  const presetOptsHTML=presets.length>0?`
+    <button class="btn-load-preset" onclick="togglePresetDropdown(${id})">📦 Cargar ítem</button>
+    <div class="preset-select-dropdown" id="psdrop-${id}">
+      ${presets.map(p=>`<div class="preset-opt" onclick="loadPresetIntoItem(${id},${p.id})">
+        <div class="preset-opt-name">${p.numitem?p.numitem+' · ':''}${p.actividad}</div>
+        <div class="preset-opt-cat">${p.categoria||''}</div>
+      </div>`).join('')}
+    </div>`:'';
+
+  div.innerHTML=`
+    <div class="item-header">
+      <span class="item-number">Ítem ${num}</span>
+      <div class="item-controls">
+        ${presetOptsHTML}
+        <button class="btn-remove" onclick="removeItem(${id})">✕</button>
+      </div>
+    </div>
+    <div class="form-row three">
+      <div><label>N° Ítem</label><input type="text" id="numitem-${id}" placeholder="Ej: 3,1"></div>
+      <div><label>Ejecutado</label><input type="text" id="ejecutado-${id}" placeholder="29,84 m³"></div>
+      <div><label>Avance %</label><input type="text" id="porcentaje-${id}" placeholder="100%"></div>
+    </div>
+    <div class="form-row full"><div>
+      <label>Descripción de la Actividad</label>
+      <input type="text" id="actividad-${id}" placeholder="Ej: Relleno con material granular seleccionado">
+    </div></div>
+    <div class="form-row full"><div>
+      <label>Categoría / Capítulo</label>
+      <input type="text" id="categoria-${id}" placeholder="Ej: RELLENOS">
+    </div></div>
+
+    <div class="photo-count-row">
+      <span class="photo-count-label">Fotos:</span>
+      <div id="countbtns-${id}">
+        ${[2,3,4].map(n=>`<button class="count-btn${n===count?' active':''}" data-n="${n}" onclick="setPhotoCount(${id},${n})">${n} fotos</button>`).join('')}
+      </div>
+    </div>
+
+    ${buildPhotoGrid(id,count,item?.photos||[])}
+
+    <div class="form-row full" style="margin-top:4px"><div>
+      <label>Observaciones</label>
+      <textarea id="obs-${id}" placeholder="Describa actividades, materiales, novedades, condiciones climáticas..."></textarea>
+    </div></div>
+  `;
+  document.getElementById('items-container').appendChild(div);
+}
+
+function togglePresetDropdown(itemId){
+  const d=document.getElementById(`psdrop-${itemId}`);
+  d.classList.toggle('show');
+}
+
+function loadPresetIntoItem(itemId,presetId){
+  const p=presets.find(x=>x.id===presetId);if(!p)return;
+  sv(`numitem-${itemId}`,p.numitem||'');
+  sv(`actividad-${itemId}`,p.actividad||'');
+  sv(`categoria-${itemId}`,p.categoria||'');
+  sv(`obs-${itemId}`,p.obsDefault||'');
+  document.getElementById(`psdrop-${itemId}`)?.classList.remove('show');
+  showToast('✅ Ítem cargado','ok');
+  saveAll();
+}
+
+function photoSlotHTML(itemId,idx,existingPhoto){
+  const hasImg=!!existingPhoto;
+  return `
+    <div class="photo-slot${hasImg?' has-image':''}" id="slot-${itemId}-${idx}">
+      <input type="file" accept="image/*" capture="environment"
+        id="file-${itemId}-${idx}" onchange="handlePhoto(${itemId},${idx},this)">
+      <div class="photo-placeholder" id="ph-${itemId}-${idx}" style="${hasImg?'display:none':''}">
+        <div class="icon">📷</div>
+        <span style="font-size:.68rem">Foto ${idx+1}</span>
+      </div>
+      <img class="photo-preview" id="preview-${itemId}-${idx}" src="${hasImg?existingPhoto.base64:''}" style="${hasImg?'':'display:none'}">
+      <button class="remove-photo" onclick="removePhoto(${itemId},${idx})">✕</button>
+    </div>
+  `;
+}
+
+async function handlePhoto(itemId,photoIdx,input){
+  const file=input.files[0];if(!file)return;
+  const item=items.find(i=>i.id===itemId);if(!item)return;
+  showToast('⏳ Cargando...','info');
+  const base64=await fileToBase64(file);
+  while(item.photos.length<=photoIdx)item.photos.push(null);
+  item.photos[photoIdx]={base64,name:file.name,type:file.type};
+  const prev=document.getElementById(`preview-${itemId}-${photoIdx}`);
+  const ph=document.getElementById(`ph-${itemId}-${photoIdx}`);
+  const slot=document.getElementById(`slot-${itemId}-${photoIdx}`);
+  if(prev){prev.src=base64;prev.style.display='block';}
+  if(ph)ph.style.display='none';
+  if(slot)slot.classList.add('has-image');
+  updateStats();saveAll();
+  showToast('✅ Foto lista','ok');
+}
+
+function removePhoto(itemId,photoIdx){
+  const item=items.find(i=>i.id===itemId);
+  if(item&&item.photos[photoIdx])item.photos[photoIdx]=null;
+  const prev=document.getElementById(`preview-${itemId}-${photoIdx}`);
+  const ph=document.getElementById(`ph-${itemId}-${photoIdx}`);
+  const slot=document.getElementById(`slot-${itemId}-${photoIdx}`);
+  const fi=document.getElementById(`file-${itemId}-${photoIdx}`);
+  if(prev){prev.style.display='none';prev.src='';}
+  if(ph)ph.style.display='flex';
+  if(slot)slot.classList.remove('has-image');
+  if(fi)fi.value='';
+  updateStats();saveAll();
+}
+
+function fileToBase64(file){
+  return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file);});
+}
+
+// ══════════════════════════════════════════════════════
+// GENERATE WORD
+// ══════════════════════════════════════════════════════
+async function generarWord(){
+  const btn=document.getElementById('btnGenerar');
+  const pb=document.getElementById('progressBar');
+  const pf=document.getElementById('progressFill');
+  if(items.length===0){showToast('❌ Agrega al menos un ítem','err');return;}
+  btn.disabled=true;btn.innerHTML='<span>⏳</span><span>Generando...</span>';
+  pb.style.display='block';pf.style.width='10%';
+  try{
+    const{Document,Packer,Paragraph,TextRun,Table,TableRow,TableCell,ImageRun,AlignmentType,BorderStyle,WidthType,ShadingType,VerticalAlign}=docx;
+    const proyecto=ge('proyecto')||'Sin nombre';const residente=ge('residente');
+    const contratista=ge('contratista');const fecha=ge('fecha');
+    const ninforme=ge('ninforme');const periodo=ge('periodo');
+
+    const GRAY='2E2E2E';const LIGHT='F0EDE8';const WHITE='FFFFFF';
+    const bS={style:BorderStyle.SINGLE,size:4,color:'2E2E2E'};
+    const allB={top:bS,bottom:bS,left:bS,right:bS};
+    const pageW=11906;const mg=1134;const cW=pageW-mg*2;
+
+    pf.style.width='25%';
+
+    const cell=(children,o={})=>new TableCell({
+      children,borders:o.borders||allB,
+      shading:o.fill?{fill:o.fill,type:ShadingType.CLEAR}:undefined,
+      width:o.width?{size:o.width,type:WidthType.DXA}:undefined,
+      columnSpan:o.span,verticalAlign:o.vAlign||VerticalAlign.CENTER,
+      margins:{top:80,bottom:80,left:120,right:120},
+    });
+    const para=(text,o={})=>new Paragraph({
+      alignment:o.align||AlignmentType.LEFT,
+      children:[new TextRun({text,font:'Arial',size:o.size||20,bold:o.bold||false,color:o.color||'000000'})]
+    });
+
+    const headerTable=new Table({
+      width:{size:cW,type:WidthType.DXA},columnWidths:[cW],
+      rows:[
+        new TableRow({children:[cell([para('F. REGISTRO FOTOGRÁFICO',{bold:true,size:28,align:AlignmentType.CENTER})],{fill:'D6D6D6',width:cW})]}),
+        new TableRow({children:[cell([
+          para(`Proyecto: ${proyecto}`,{bold:true,size:20}),
+          para(`Residente: ${residente}   |   Contratista: ${contratista}`,{size:18}),
+          para(`Fecha: ${formatDate(fecha)}   |   Informe N°: ${ninforme}   |   Periodo: ${periodo}`,{size:18}),
+        ],{fill:'F8F8F8',width:cW})]}),
+      ]
+    });
+
+    pf.style.width='40%';
+    const sectionChildren=[headerTable,new Paragraph({children:[]})];
+
+    for(const item of items){
+      const numitem=ge(`numitem-${item.id}`);const actividad=ge(`actividad-${item.id}`);
+      const categoria=ge(`categoria-${item.id}`);const ejecutado=ge(`ejecutado-${item.id}`);
+      const porcentaje=ge(`porcentaje-${item.id}`);const obs=ge(`obs-${item.id}`);
+      const photoCount=item.photoCount||2;
+
+      const colA=900,colB=Math.round(cW*.50),colC=Math.round(cW*.24),colD=cW-900-Math.round(cW*.50)-Math.round(cW*.24);
+
+      // Photo cells: distribute evenly across remaining width
+      const photosWidth=cW-colA;
+      const photoW=Math.floor(photosWidth/photoCount);
+
+      const makeImgCell=async(photoData,extraSpan)=>{
+        let children;
+        if(photoData){
+          try{
+            const bytes=b64ToBytes(photoData.base64);
+            const ext=photoData.type?.includes('png')?'png':'jpg';
+            // Scale image width based on count
+            const imgW=photoCount===2?220:(photoCount===3?145:108);
+            const imgH=Math.round(imgW*0.75);
+            children=[new Paragraph({alignment:AlignmentType.CENTER,children:[new ImageRun({data:bytes,transformation:{width:imgW,height:imgH},type:ext})]})];
+          }catch{children=[para('[ Error imagen ]',{size:18,color:'999999'})];}
+        }else{children=[para('[ Sin fotografía ]',{size:18,align:AlignmentType.CENTER,color:'999999'})];}
+        return cell(children,{width:photoW,vAlign:VerticalAlign.CENTER,span:extraSpan});
+      };
+
+      // Build photo row cells
+      const photoCells=[];
+      for(let i=0;i<photoCount;i++){
+        photoCells.push(await makeImgCell(item.photos[i]||null,1));
+      }
+
+      // Build column widths array
+      const colWidths=[colA,...Array(photoCount).fill(photoW)];
+      // Adjust last photo col to absorb rounding
+      colWidths[colWidths.length-1]=cW-colA-photoW*(photoCount-1);
+
+      const mainTable=new Table({
+        width:{size:cW,type:WidthType.DXA},
+        columnWidths:[colA,colB,colC,colD],
+        rows:[
+          new TableRow({children:[
+            cell([para('ITEMS',{bold:true,size:18,align:AlignmentType.CENTER,color:WHITE})],{fill:GRAY,width:colA}),
+            cell([para('ACTIVIDAD',{bold:true,size:18,align:AlignmentType.CENTER,color:WHITE})],{fill:GRAY,width:colB}),
+            cell([para('CANTIDAD',{bold:true,size:18,align:AlignmentType.CENTER,color:WHITE})],{fill:GRAY,width:colC+colD,span:2}),
+          ]}),
+          new TableRow({children:[
+            cell([para('',{size:18})],{fill:LIGHT,width:colA}),
+            cell([para(categoria,{bold:true,size:20})],{fill:LIGHT,width:colB}),
+            cell([para('EJECUTADO',{bold:true,size:18,align:AlignmentType.CENTER})],{fill:LIGHT,width:colC}),
+            cell([para('%',{bold:true,size:18,align:AlignmentType.CENTER})],{fill:LIGHT,width:colD}),
+          ]}),
+          new TableRow({children:[
+            cell([para(numitem,{bold:true,size:20,align:AlignmentType.CENTER})],{width:colA}),
+            cell([para(actividad,{size:20})],{width:colB}),
+            cell([para(ejecutado,{size:20,align:AlignmentType.CENTER})],{width:colC}),
+            cell([para(porcentaje,{size:20,align:AlignmentType.CENTER})],{width:colD}),
+          ]}),
+          // Photo row with dynamic columns
+          new TableRow({
+            height:{value:3000,rule:'atLeast'},
+            children:[
+              cell([para(numitem,{size:20,align:AlignmentType.CENTER,bold:true})],{width:colA}),
+              ...photoCells,
+            ]
+          }),
+          new TableRow({children:[
+            cell([para('OBSERVACIONES: '+obs,{size:18})],{fill:'FAFAF8',width:cW,span:4}),
+          ]}),
+        ]
+      });
+
+      sectionChildren.push(mainTable);
+      sectionChildren.push(new Paragraph({children:[]}));
+    }
+
+    pf.style.width='85%';
+    const doc=new Document({sections:[{
+      properties:{page:{size:{width:11906,height:16838},margin:{top:mg,bottom:mg,left:mg,right:mg}}},
+      children:sectionChildren,
+    }]});
+
+    const buffer=await Packer.toBuffer(doc);
+    const blob=new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;a.download=`RegistroFoto_${proyecto.replace(/[^a-zA-Z0-9]/g,'_').substring(0,25)}_${ninforme||'001'}.docx`;
+    a.click();URL.revokeObjectURL(url);
+    pf.style.width='100%';showToast('✅ ¡Informe generado!','ok');
+  }catch(err){
+    console.error(err);showToast('❌ Error: '+err.message.substring(0,50),'err');
+  }finally{
+    btn.disabled=false;btn.innerHTML='<span>📄</span><span>Generar Informe Word</span>';
+    setTimeout(()=>{pb.style.display='none';pf.style.width='0';},1500);
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════
+function b64ToBytes(dataUrl){
+  const b=atob(dataUrl.split(',')[1]);const bytes=new Uint8Array(b.length);
+  for(let i=0;i<b.length;i++)bytes[i]=b.charCodeAt(i);return bytes;
+}
+function formatDate(s){
+  if(!s)return'';const[y,m,d]=s.split('-');
+  const M=['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  return`${d} de ${M[+m]} de ${y}`;
+}
+let toastTimer=null;
+function showToast(msg,type){
+  const t=document.getElementById('toast');t.textContent=msg;t.className=`toast ${type} show`;
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+// ══════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════
+document.getElementById('fecha').value=new Date().toISOString().split('T')[0];
+const restored=loadAll();
+if(!restored)addItem();
+updateStats();
+document.addEventListener('input',()=>{updateStats();saveAll();});
+
+// iOS tip
+const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+const isStandalone=window.matchMedia('(display-mode: standalone)').matches;
+if(isIOS&&!isStandalone)setTimeout(()=>showToast('📱 iPhone: Compartir → "Añadir a inicio"','info'),4500);
+</script>
+</body>
+</html>
